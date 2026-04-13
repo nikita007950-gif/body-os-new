@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import date, datetime
+from pathlib import Path
 
 st.set_page_config(
     page_title="Body OS",
@@ -9,7 +10,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-DB_PATH = "data/body_os.db"
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+DB_PATH = str(DATA_DIR / "body_os.db")
 
 # =========================
 # STYLES

@@ -4,6 +4,29 @@ import pandas as pd
 from datetime import date, datetime
 from pathlib import Path
 
+
+def check_auth():
+    if "auth" not in st.session_state:
+        st.session_state.auth = False
+
+    if not st.session_state.auth:
+        st.title("🔐 Вход в Body OS")
+
+        username = st.text_input("Логин")
+        password = st.text_input("Пароль", type="password")
+
+        if st.button("Войти"):
+            if username == "nikita_k" and password == "784326":
+                st.session_state.auth = True
+                st.rerun()
+            else:
+                st.error("Неверный логин или пароль")
+
+        st.stop()
+
+
+check_auth()
+
 st.set_page_config(
     page_title="Body OS",
     layout="wide",

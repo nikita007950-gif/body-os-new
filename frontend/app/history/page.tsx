@@ -22,8 +22,11 @@ type WorkoutGroup = {
   rows: HistoryRow[];
 };
 
-function cleanJoin(values: string[]) {
-  return values.filter((x: string) => x && x.trim() !== "").join(" / ");
+function cleanJoin(values: any[]) {
+  return values
+    .map((x) => String(x ?? "").trim())
+    .filter((x) => x !== "")
+    .join(" / ");
 }
 
 export default function HistoryPage() {

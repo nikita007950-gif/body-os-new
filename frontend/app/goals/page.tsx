@@ -11,5 +11,4 @@ export default function GoalsPage() {
         </div>
       </div>
     </div>
-  );
-}
+  )

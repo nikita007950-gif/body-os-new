@@ -8,6 +8,15 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { cardioPlan, mealPlan } from "@/lib/body-data";
 
 const API_URL = "/api";
@@ -16,6 +25,13 @@ type DashboardSummary = {
   last_workout_type: string | null;
   last_workout_date: string | null;
   exercise_count: number;
+};
+
+type BodyMetric = {
+  date: string;
+  weight: number | null;
+  body_fat: number | null;
+  comment: string;
 };
 
 const reminders = [
@@ -32,6 +48,7 @@ const reminders = [
 export default function DashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [bodyMetrics, setBodyMetrics] = useState<BodyMetric[]>([]);
 
   useEffect(() => {
     fetch(`${API_URL}/dashboard-summary`)
@@ -43,6 +60,13 @@ export default function DashboardPage() {
           last_workout_date: null,
           exercise_count: 0,
         });
+      });
+
+    fetch(`${API_URL}/body-metrics`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: BodyMetric[]) => setBodyMetrics(data))
+      .catch(() => {
+        setBodyMetrics([]);
       });
   }, []);
 
@@ -61,6 +85,25 @@ export default function DashboardPage() {
     if (!summary?.last_workout_date) return "—";
     return "1";
   }, [summary]);
+
+  const chartData = useMemo(() => {
+    return bodyMetrics.map((item) => ({
+      date: formatShortDate(item.date),
+      weight: item.weight,
+      body_fat: item.body_fat,
+      rawDate: item.date,
+    }));
+  }, [bodyMetrics]);
+
+  const lastWeight = useMemo(() => {
+    const item = [...bodyMetrics].reverse().find((x) => x.weight !== null);
+    return item?.weight ?? null;
+  }, [bodyMetrics]);
+
+  const lastBodyFat = useMemo(() => {
+    const item = [...bodyMetrics].reverse().find((x) => x.body_fat !== null);
+    return item?.body_fat ?? null;
+  }, [bodyMetrics]);
 
   const metrics = [
     {
@@ -87,15 +130,15 @@ export default function DashboardPage() {
       icon: History,
     },
     {
-      label: "Кардио",
-      value: cardioPlan,
-      hint: "Текущий план",
+      label: "Вес",
+      value: lastWeight !== null ? `${lastWeight} кг` : "Нет данных",
+      hint: "Последний замер",
       icon: Flame,
     },
     {
-      label: "Питание",
-      value: `${mealPlan.length} приема`,
-      hint: "Текущий план питания",
+      label: "Жир",
+      value: lastBodyFat !== null ? `${lastBodyFat}%` : "Нет данных",
+      hint: "Последний замер",
       icon: Utensils,
     },
   ];
@@ -141,18 +184,31 @@ export default function DashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel title="Вес и состав тела" action="Открыть журнал">
           <div className="grid gap-4 md:grid-cols-2">
-            <GraphPlaceholder
+            <MetricChartCard
               title="Вес"
-              value="Скоро"
-              hint="Линейный график по датам"
+              value={lastWeight !== null ? `${lastWeight} кг` : "Нет данных"}
+              hint="Динамика по датам"
               onClick={() => router.push("/body")}
-            />
-            <GraphPlaceholder
+            >
+              <MetricLineChart
+                data={chartData}
+                dataKey="weight"
+                unit="кг"
+              />
+            </MetricChartCard>
+
+            <MetricChartCard
               title="% жира"
-              value="Скоро"
-              hint="Линейный график по датам"
+              value={lastBodyFat !== null ? `${lastBodyFat}%` : "Нет данных"}
+              hint="Динамика по датам"
               onClick={() => router.push("/body")}
-            />
+            >
+              <MetricLineChart
+                data={chartData}
+                dataKey="body_fat"
+                unit="%"
+              />
+            </MetricChartCard>
           </div>
         </Panel>
 
@@ -177,10 +233,7 @@ export default function DashboardPage() {
 
           <Panel title="Кратко">
             <div className="space-y-3">
-              <CompactRow
-                label="Следующая"
-                value={nextWorkout}
-              />
+              <CompactRow label="Следующая" value={nextWorkout} />
               <CompactRow
                 label="Последняя"
                 value={
@@ -248,16 +301,18 @@ function Panel({
   );
 }
 
-function GraphPlaceholder({
+function MetricChartCard({
   title,
   value,
   hint,
   onClick,
+  children,
 }: {
   title: string;
   value: string;
   hint: string;
   onClick: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -268,10 +323,74 @@ function GraphPlaceholder({
       <div className="mb-1 text-2xl font-semibold tracking-tight">{value}</div>
       <div className="text-sm text-slate-500">{hint}</div>
 
-      <div className="mt-5 h-32 rounded-xl border border-dashed border-cyan-400/20 bg-cyan-400/[0.03] flex items-center justify-center text-sm text-slate-500">
-        Здесь будет график
+      <div className="mt-5 h-40 rounded-xl border border-white/10 bg-cyan-400/[0.03] p-2">
+        {children}
       </div>
     </button>
+  );
+}
+
+function MetricLineChart({
+  data,
+  dataKey,
+  unit,
+}: {
+  data: Array<{
+    date: string;
+    rawDate: string;
+    weight: number | null;
+    body_fat: number | null;
+  }>;
+  dataKey: "weight" | "body_fat";
+  unit: string;
+}) {
+  const validData = data.filter((item) => item[dataKey] !== null);
+
+  if (validData.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-slate-500">
+        Пока нет данных
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={validData}>
+        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 12, fill: "#94a3b8" }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 12, fill: "#94a3b8" }}
+          axisLine={false}
+          tickLine={false}
+          width={36}
+          domain={["auto", "auto"]}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "#0f172a",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "16px",
+            color: "#e2e8f0",
+          }}
+          formatter={(value: number) => [`${value} ${unit}`, "Значение"]}
+          labelFormatter={(label) => `Дата: ${label}`}
+        />
+        <Line
+          type="monotone"
+          dataKey={dataKey}
+          stroke="#22d3ee"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -288,4 +407,14 @@ function CompactRow({
       <span className="text-sm font-medium text-slate-100">{value}</span>
     </div>
   );
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+  });
 }

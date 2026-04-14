@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import logging
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -79,9 +79,9 @@ class WorkoutRow(BaseModel):
     date: str
     workout_type: str
     exercise: str
-    target_reps: List[str]
-    actual_reps: List[str]
-    weights: List[str]
+    target_reps: List[Union[str, int, float]] = []
+    actual_reps: List[Union[str, int, float]] = []
+    weights: List[Union[str, int, float]] = []
     comment: str = ""
 
 
@@ -126,8 +126,8 @@ def save_workout(data: List[WorkoutRow]):
             if not item.exercise:
                 raise HTTPException(status_code=400, detail="Field 'exercise' is required")
 
-            reps_src = item.actual_reps or []
-            weights_src = item.weights or []
+            reps_src = [str(x) for x in (item.actual_reps or [])]
+            weights_src = [str(x) for x in (item.weights or [])]
 
             reps = (reps_src + ["", "", "", ""])[:4]
             weights = (weights_src + ["", "", "", ""])[:4]

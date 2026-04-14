@@ -1,0 +1,18 @@
+services:
+  backend:
+    build: ./backend
+    container_name: bodyos-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/body_os.db:/app/body_os.db
+
+  frontend:
+    build: ./frontend
+    container_name: bodyos-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+    depends_on:
+      - backend

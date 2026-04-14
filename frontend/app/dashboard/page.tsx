@@ -53,7 +53,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch(`${API_URL}/dashboard-summary`)
       .then((res) => res.json())
-      .then((data: DashboardSummary) => setSummary(data))
+      .then(setSummary)
       .catch(() => {
         setSummary({
           last_workout_type: null,
@@ -62,28 +62,17 @@ export default function DashboardPage() {
         });
       });
 
-    fetch(`${API_URL}/body-metrics`, { cache: "no-store" })
+    fetch(`${API_URL}/body-metrics`)
       .then((res) => res.json())
-      .then((data: BodyMetric[]) => setBodyMetrics(data))
-      .catch(() => {
-        setBodyMetrics([]);
-      });
+      .then(setBodyMetrics)
+      .catch(() => setBodyMetrics([]));
   }, []);
 
   const nextWorkout = useMemo(() => {
     const order = ["Push", "Pull", "Legs"];
-
     if (!summary?.last_workout_type) return "Push";
-
     const idx = order.indexOf(summary.last_workout_type);
-    if (idx === -1) return "Push";
-
     return order[(idx + 1) % order.length];
-  }, [summary]);
-
-  const weeklyWorkouts = useMemo(() => {
-    if (!summary?.last_workout_date) return "—";
-    return "1";
   }, [summary]);
 
   const chartData = useMemo(() => {
@@ -91,164 +80,96 @@ export default function DashboardPage() {
       date: formatShortDate(item.date),
       weight: item.weight,
       body_fat: item.body_fat,
-      rawDate: item.date,
     }));
   }, [bodyMetrics]);
 
-  const lastWeight = useMemo(() => {
-    const item = [...bodyMetrics].reverse().find((x) => x.weight !== null);
-    return item?.weight ?? null;
-  }, [bodyMetrics]);
+  const lastWeight =
+    [...bodyMetrics].reverse().find((x) => x.weight !== null)?.weight ?? null;
 
-  const lastBodyFat = useMemo(() => {
-    const item = [...bodyMetrics].reverse().find((x) => x.body_fat !== null);
-    return item?.body_fat ?? null;
-  }, [bodyMetrics]);
-
-  const metrics = [
-    {
-      label: "Следующая тренировка",
-      value: nextWorkout,
-      hint:
-        nextWorkout === "Push"
-          ? "Грудь · плечи · трицепс"
-          : nextWorkout === "Pull"
-          ? "Спина · бицепс"
-          : "Ноги · корпус",
-      icon: Dumbbell,
-    },
-    {
-      label: "Последняя тренировка",
-      value:
-        summary?.last_workout_type && summary?.last_workout_date
-          ? `${summary.last_workout_type} · ${summary.last_workout_date}`
-          : "Пока нет записей",
-      hint:
-        summary?.exercise_count && summary.exercise_count > 0
-          ? `${summary.exercise_count} упражнений`
-          : "Сохрани первую тренировку",
-      icon: History,
-    },
-    {
-      label: "Вес",
-      value: lastWeight !== null ? `${lastWeight} кг` : "Нет данных",
-      hint: "Последний замер",
-      icon: Flame,
-    },
-    {
-      label: "Жир",
-      value: lastBodyFat !== null ? `${lastBodyFat}%` : "Нет данных",
-      hint: "Последний замер",
-      icon: Utensils,
-    },
-  ];
+  const lastBodyFat =
+    [...bodyMetrics].reverse().find((x) => x.body_fat !== null)?.body_fat ?? null;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="text-sm text-slate-400">Дашборд</div>
-          <div className="text-base font-medium text-slate-200">
-            Сегодня · {new Date().toLocaleDateString("ru-RU")}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => router.push("/body")}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
-          >
-            Добавить вес
-          </button>
-          <button
-            onClick={() => router.push("/workouts")}
-            className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-          >
-            Записать тренировку
-          </button>
-        </div>
-      </div>
+      <Header router={router} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((item) => (
-          <MetricCard
-            key={item.label}
-            label={item.label}
-            value={item.value}
-            hint={item.hint}
-            icon={item.icon}
-          />
-        ))}
+        <MetricCard label="Следующая" value={nextWorkout} icon={Dumbbell} />
+        <MetricCard
+          label="Последняя"
+          value={
+            summary?.last_workout_type
+              ? `${summary.last_workout_type} · ${summary.last_workout_date}`
+              : "Нет данных"
+          }
+          icon={History}
+        />
+        <MetricCard
+          label="Вес"
+          value={lastWeight ? `${lastWeight} кг` : "—"}
+          icon={Flame}
+        />
+        <MetricCard
+          label="Жир"
+          value={lastBodyFat ? `${lastBodyFat}%` : "—"}
+          icon={Utensils}
+        />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Вес и состав тела" action="Открыть журнал">
-          <div className="grid gap-4 md:grid-cols-2">
-            <MetricChartCard
-              title="Вес"
-              value={lastWeight !== null ? `${lastWeight} кг` : "Нет данных"}
-              hint="Динамика по датам"
-              onClick={() => router.push("/body")}
-            >
-              <MetricLineChart
-                data={chartData}
-                dataKey="weight"
-                unit="кг"
-              />
-            </MetricChartCard>
+      <Panel title="Вес и состав тела">
+        <div className="grid gap-4 md:grid-cols-2">
+          <ChartCard title="Вес">
+            <MetricChart data={chartData} dataKey="weight" unit="кг" />
+          </ChartCard>
 
-            <MetricChartCard
-              title="% жира"
-              value={lastBodyFat !== null ? `${lastBodyFat}%` : "Нет данных"}
-              hint="Динамика по датам"
-              onClick={() => router.push("/body")}
-            >
-              <MetricLineChart
-                data={chartData}
-                dataKey="body_fat"
-                unit="%"
-              />
-            </MetricChartCard>
-          </div>
-        </Panel>
-
-        <div className="space-y-6">
-          <Panel title="Напоминания">
-            <div className="space-y-3">
-              {reminders.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4"
-                >
-                  <div className="mb-1 text-sm font-medium text-cyan-200">
-                    {item.title}
-                  </div>
-                  <div className="text-sm leading-6 text-slate-300">
-                    {item.text}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel title="Кратко">
-            <div className="space-y-3">
-              <CompactRow label="Следующая" value={nextWorkout} />
-              <CompactRow
-                label="Последняя"
-                value={
-                  summary?.last_workout_type && summary?.last_workout_date
-                    ? `${summary.last_workout_type} · ${summary.last_workout_date}`
-                    : "Нет данных"
-                }
-              />
-              <CompactRow
-                label="За неделю"
-                value={`${weeklyWorkouts} трен.`}
-              />
-            </div>
-          </Panel>
+          <ChartCard title="% жира">
+            <MetricChart data={chartData} dataKey="body_fat" unit="%" />
+          </ChartCard>
         </div>
+      </Panel>
+
+      <Panel title="Напоминания">
+        <div className="space-y-3">
+          {reminders.map((item) => (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4"
+            >
+              <div className="text-sm font-medium text-cyan-200">
+                {item.title}
+              </div>
+              <div className="text-sm text-slate-300">{item.text}</div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function Header({ router }: { router: any }) {
+  return (
+    <div className="flex justify-between">
+      <div>
+        <div className="text-sm text-slate-400">Дашборд</div>
+        <div className="text-base text-slate-200">
+          Сегодня · {new Date().toLocaleDateString("ru-RU")}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => router.push("/body")}
+          className="px-4 py-2 border border-white/10 rounded-xl"
+        >
+          Добавить вес
+        </button>
+        <button
+          onClick={() => router.push("/workouts")}
+          className="px-4 py-2 bg-cyan-400 rounded-xl text-black"
+        >
+          Записать тренировку
+        </button>
       </div>
     </div>
   );
@@ -257,164 +178,60 @@ export default function DashboardPage() {
 function MetricCard({
   label,
   value,
-  hint,
   icon: Icon,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
+}: any) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-black/10">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm text-slate-400">{label}</div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-2">
-          <Icon className="h-4 w-4 text-cyan-300" />
-        </div>
+    <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+      <div className="flex justify-between">
+        <span className="text-slate-400 text-sm">{label}</span>
+        <Icon className="w-4 h-4 text-cyan-300" />
       </div>
-      <div className="mb-1 text-2xl font-semibold tracking-tight">{value}</div>
-      <div className="text-sm text-slate-500">{hint}</div>
+      <div className="text-xl font-semibold">{value}</div>
     </div>
   );
 }
 
-function Panel({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: string;
-  children: React.ReactNode;
-}) {
+function Panel({ title, children }: any) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        {action ? (
-          <span className="text-sm text-slate-400">{action}</span>
-        ) : null}
-      </div>
+    <div className="p-5 border border-white/10 rounded-2xl">
+      <h2 className="mb-4">{title}</h2>
       {children}
-    </section>
+    </div>
   );
 }
 
-function MetricChartCard({
-  title,
-  value,
-  hint,
-  onClick,
-  children,
-}: {
-  title: string;
-  value: string;
-  hint: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function ChartCard({ title, children }: any) {
   return (
-    <button
-      onClick={onClick}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left transition hover:bg-white/[0.05]"
-    >
+    <div className="p-4 border border-white/10 rounded-xl">
       <div className="mb-2 text-sm text-slate-400">{title}</div>
-      <div className="mb-1 text-2xl font-semibold tracking-tight">{value}</div>
-      <div className="text-sm text-slate-500">{hint}</div>
-
-      <div className="mt-5 h-40 rounded-xl border border-white/10 bg-cyan-400/[0.03] p-2">
-        {children}
-      </div>
-    </button>
+      <div className="h-40">{children}</div>
+    </div>
   );
 }
 
-function MetricLineChart({
-  data,
-  dataKey,
-  unit,
-}: {
-  data: Array<{
-    date: string;
-    rawDate: string;
-    weight: number | null;
-    body_fat: number | null;
-  }>;
-  dataKey: "weight" | "body_fat";
-  unit: string;
-}) {
-  const validData = data.filter((item) => item[dataKey] !== null);
+function MetricChart({ data, dataKey, unit }: any) {
+  const valid = data.filter((x: any) => x[dataKey] !== null);
 
-  if (validData.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-slate-500">
-        Пока нет данных
-      </div>
-    );
+  if (!valid.length) {
+    return <div className="text-slate-500 text-sm">Нет данных</div>;
   }
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={validData}>
-        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 12, fill: "#94a3b8" }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 12, fill: "#94a3b8" }}
-          axisLine={false}
-          tickLine={false}
-          width={36}
-          domain={["auto", "auto"]}
-        />
+      <LineChart data={valid}>
+        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+        <XAxis dataKey="date" />
+        <YAxis />
         <Tooltip
-          contentStyle={{
-            backgroundColor: "#0f172a",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "16px",
-            color: "#e2e8f0",
-          }}
-          formatter={(value) => [`${value} ${unit}`, "Значение"]}
-          labelFormatter={(label) => `Дата: ${label}`}
+          formatter={(value: any) => [String(value) + " " + unit, "Значение"]}
         />
-        <Line
-          type="monotone"
-          dataKey={dataKey}
-          stroke="#22d3ee"
-          strokeWidth={2}
-          dot={{ r: 3 }}
-          activeDot={{ r: 5 }}
-        />
+        <Line dataKey={dataKey} stroke="#22d3ee" />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
-function CompactRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-      <span className="text-sm text-slate-400">{label}</span>
-      <span className="text-sm font-medium text-slate-100">{value}</span>
-    </div>
-  );
-}
-
 function formatShortDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-  });
+  const d = new Date(value);
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }

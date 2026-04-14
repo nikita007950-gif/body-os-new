@@ -159,8 +159,8 @@ function Header({ router }: { router: any }) {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <div className="text-sm text-slate-400">Дашборд</div>
-        <div className="text-base text-slate-200">
+        <div className="text-sm text-slate-300">Дашборд</div>
+        <div className="text-lg font-semibold text-white">
           Сегодня · {new Date().toLocaleDateString("ru-RU")}
         </div>
       </div>
@@ -193,12 +193,12 @@ function MetricCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-black/10">
+    <div className="rounded-[24px] border border-white/10 bg-slate-800/70 p-5 shadow-lg shadow-black/20">
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm text-slate-400">{label}</span>
+        <span className="text-sm text-slate-300">{label}</span>
         <Icon className="h-4 w-4 text-cyan-300" />
       </div>
-      <div className="text-xl font-semibold">{value}</div>
+      <div className="text-2xl font-bold text-white">{value}</div>
     </div>
   );
 }
@@ -211,7 +211,7 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+    <section className="rounded-[28px] border border-white/10 bg-slate-900/70 p-5 sm:p-6">
       <h2 className="mb-4 text-lg font-semibold tracking-tight">{title}</h2>
       {children}
     </section>
@@ -226,7 +226,7 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-2xl border border-white/10 bg-slate-800/60 p-4">
       <div className="mb-3 text-sm text-slate-300">{title}</div>
       <div className="h-44">{children}</div>
     </div>

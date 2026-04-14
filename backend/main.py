@@ -344,64 +344,6 @@ def save_body_metric(data: BodyMetricRow):
         cur = conn.cursor()
 
         cur.execute("""
-            INSERT INTO body_metrics (date, weight, body_fat, comment)
-            VALUES (?, ?, ?, ?)
-        """, (
-            data.date,
-            data.weight,
-            data.body_fat,
-            data.comment or "",
-        ))
-
-        conn.commit()
-        logger.info(
-            "Body metric saved successfully: date=%s weight=%s body_fat=%s",
-            data.date,
-            data.weight,
-            data.body_fat,
-        )
-
-        return {
-            "status": "success",
-            "message": "Body metric saved",
-        }
-
-    except HTTPException:
-        if conn:
-            conn.rollback()
-        raise
-
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        logger.exception("Failed to save body metric: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to save body metric")
-
-    finally:
-        if conn:
-            conn.close()
-
-
-@app.post("/body-metrics")
-def save_body_metric(data: BodyMetricRow):
-    ensure_db()
-
-    if not data.date:
-        raise HTTPException(status_code=400, detail="Field 'date' is required")
-
-    if data.weight is None and data.body_fat is None:
-        raise HTTPException(
-            status_code=400,
-            detail="At least one of 'weight' or 'body_fat' is required",
-        )
-
-    conn = None
-
-    try:
-        conn = get_conn()
-        cur = conn.cursor()
-
-        cur.execute("""
             SELECT id
             FROM body_metrics
             WHERE date = ?
@@ -459,6 +401,45 @@ def save_body_metric(data: BodyMetricRow):
             conn.rollback()
         logger.exception("Failed to save body metric: %s", e)
         raise HTTPException(status_code=500, detail="Failed to save body metric")
+
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.get("/body-metrics")
+def get_body_metrics():
+    ensure_db()
+
+    conn = None
+
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT date, weight, body_fat, comment
+            FROM body_metrics
+            ORDER BY date ASC, id ASC
+        """)
+
+        rows = cur.fetchall()
+
+        result = [
+            {
+                "date": row[0],
+                "weight": row[1],
+                "body_fat": row[2],
+                "comment": row[3],
+            }
+            for row in rows
+        ]
+
+        return result
+
+    except Exception as e:
+        logger.exception("Failed to load body metrics: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to load body metrics")
 
     finally:
         if conn:

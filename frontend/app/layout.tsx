@@ -1,6 +1,7 @@
 "use client";
 
 import "./globals.css";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,7 +23,7 @@ const navItems = [
   { href: "/goals", label: "Цели", icon: Flag },
 ];
 
-export default function RootLayoutContent({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -32,14 +33,14 @@ export default function RootLayoutContent({
 
   return (
     <html lang="ru">
-      <body className="bg-[#f8f7fb] text-gray-900">
+      <body className="bg-[#071325] text-white">
         <div className="min-h-screen md:flex">
-          <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-white md:flex md:flex-col">
-            <div className="border-b border-gray-100 px-6 py-6">
-              <div className="text-4xl font-bold tracking-tight text-gray-900">
+          <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#06101f] md:flex md:flex-col">
+            <div className="border-b border-white/10 px-6 py-6">
+              <div className="text-4xl font-bold tracking-tight text-white">
                 Body OS
               </div>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-slate-300">
                 Операционная система тела
               </p>
             </div>
@@ -53,8 +54,8 @@ export default function RootLayoutContent({
                     href={href}
                     className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                       active
-                        ? "bg-pink-500 text-white shadow-sm"
-                        : "text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                        ? "bg-cyan-400 text-slate-950"
+                        : "text-slate-200 hover:bg-white/5 hover:text-white"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -65,11 +66,11 @@ export default function RootLayoutContent({
             </nav>
 
             <div className="p-4">
-              <div className="rounded-3xl border border-pink-100 bg-pink-50 p-4">
-                <div className="text-sm font-semibold text-pink-700">
+              <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+                <div className="text-sm font-semibold text-cyan-200">
                   Фокус недели
                 </div>
-                <div className="mt-2 text-sm leading-6 text-gray-600">
+                <div className="mt-2 text-sm leading-6 text-slate-300">
                   Стабильно закрывать PPL-цикл и фиксировать факт по повторам и
                   весам.
                 </div>
@@ -78,17 +79,19 @@ export default function RootLayoutContent({
           </aside>
 
           <div className="flex-1">
-            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-4 py-4 backdrop-blur md:hidden">
+            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#071325]/90 px-4 py-4 backdrop-blur md:hidden">
               <div>
-                <div className="text-2xl font-bold tracking-tight text-gray-900">
+                <div className="text-2xl font-bold tracking-tight text-white">
                   Body OS
                 </div>
-                <div className="text-sm text-gray-500">Тренировки и прогресс</div>
+                <div className="text-sm text-slate-300">
+                  Тренировки и прогресс
+                </div>
               </div>
 
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="rounded-2xl border border-gray-200 bg-white p-3 text-gray-700 shadow-sm"
+                className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white shadow-sm"
               >
                 <Menu className="h-6 w-6" />
               </button>
@@ -97,22 +100,20 @@ export default function RootLayoutContent({
             {mobileMenuOpen && (
               <div className="fixed inset-0 z-40 md:hidden">
                 <div
-                  className="absolute inset-0 bg-black/30"
+                  className="absolute inset-0 bg-black/40"
                   onClick={() => setMobileMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-0 h-full w-72 border-l border-gray-200 bg-white p-5 shadow-xl">
+                <div className="absolute right-0 top-0 h-full w-72 border-l border-white/10 bg-[#06101f] p-5 shadow-xl">
                   <div className="mb-6 flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-white">
                         Body OS
                       </div>
-                      <div className="text-sm text-gray-500">
-                        Навигация
-                      </div>
+                      <div className="text-sm text-slate-300">Навигация</div>
                     </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-2xl border border-gray-200 p-2 text-gray-700"
+                      className="rounded-2xl border border-white/10 p-2 text-white"
                     >
                       <X className="h-5 w-5" />
                     </button>
@@ -128,8 +129,8 @@ export default function RootLayoutContent({
                           onClick={() => setMobileMenuOpen(false)}
                           className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                             active
-                              ? "bg-pink-500 text-white"
-                              : "text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                              ? "bg-cyan-400 text-slate-950"
+                              : "text-slate-200 hover:bg-white/5 hover:text-white"
                           }`}
                         >
                           <Icon className="h-4 w-4" />

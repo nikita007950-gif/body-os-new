@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
 function Header({ router }: { router: any }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div>
         <div className="text-sm text-slate-300">Дашборд</div>
         <div className="text-lg font-semibold text-white">
@@ -168,7 +168,7 @@ function Header({ router }: { router: any }) {
       <div className="flex gap-2">
         <button
           onClick={() => router.push("/body")}
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
         >
           Добавить вес
         </button>
@@ -212,7 +212,9 @@ function Panel({
 }) {
   return (
     <section className="rounded-[28px] border border-white/10 bg-slate-900/70 p-5 sm:p-6">
-      <h2 className="mb-4 text-lg font-semibold tracking-tight">{title}</h2>
+      <h2 className="mb-4 text-lg font-semibold tracking-tight text-white">
+        {title}
+      </h2>
       {children}
     </section>
   );

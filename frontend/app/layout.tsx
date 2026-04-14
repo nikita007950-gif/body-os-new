@@ -46,10 +46,10 @@ export default function RootLayout({
             >
               <div className="mb-6 flex items-start justify-between">
                 <div>
-                  <div className="text-2xl font-semibold tracking-tight">
+                  <div className="text-2xl font-semibold tracking-tight text-white">
                     Body OS
                   </div>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-slate-300">
                     Операционная система тела
                   </p>
                 </div>

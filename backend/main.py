@@ -382,9 +382,18 @@ def save_body_metric(data: BodyMetricRow):
             conn.close()
 
 
-@app.get("/body-metrics")
-def get_body_metrics():
+@app.post("/body-metrics")
+def save_body_metric(data: BodyMetricRow):
     ensure_db()
+
+    if not data.date:
+        raise HTTPException(status_code=400, detail="Field 'date' is required")
+
+    if data.weight is None and data.body_fat is None:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one of 'weight' or 'body_fat' is required",
+        )
 
     conn = None
 
@@ -393,28 +402,63 @@ def get_body_metrics():
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT date, weight, body_fat, comment
+            SELECT id
             FROM body_metrics
-            ORDER BY date ASC, id ASC
-        """)
+            WHERE date = ?
+            ORDER BY id DESC
+            LIMIT 1
+        """, (data.date,))
+        existing = cur.fetchone()
 
-        rows = cur.fetchall()
+        if existing:
+            cur.execute("""
+                UPDATE body_metrics
+                SET weight = ?, body_fat = ?, comment = ?
+                WHERE id = ?
+            """, (
+                data.weight,
+                data.body_fat,
+                data.comment or "",
+                existing[0],
+            ))
+            action = "updated"
+        else:
+            cur.execute("""
+                INSERT INTO body_metrics (date, weight, body_fat, comment)
+                VALUES (?, ?, ?, ?)
+            """, (
+                data.date,
+                data.weight,
+                data.body_fat,
+                data.comment or "",
+            ))
+            action = "created"
 
-        result = [
-            {
-                "date": row[0],
-                "weight": row[1],
-                "body_fat": row[2],
-                "comment": row[3],
-            }
-            for row in rows
-        ]
+        conn.commit()
+        logger.info(
+            "Body metric %s successfully: date=%s weight=%s body_fat=%s",
+            action,
+            data.date,
+            data.weight,
+            data.body_fat,
+        )
 
-        return result
+        return {
+            "status": "success",
+            "message": f"Body metric {action}",
+            "action": action,
+        }
+
+    except HTTPException:
+        if conn:
+            conn.rollback()
+        raise
 
     except Exception as e:
-        logger.exception("Failed to load body metrics: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to load body metrics")
+        if conn:
+            conn.rollback()
+        logger.exception("Failed to save body metric: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to save body metric")
 
     finally:
         if conn:

@@ -29,6 +29,14 @@ def get_conn():
     return sqlite3.connect(DB)
 
 
+def ensure_column(cur, table_name: str, column_name: str, column_type: str):
+    cur.execute(f"PRAGMA table_info({table_name})")
+    columns = [row[1] for row in cur.fetchall()]
+
+    if column_name not in columns:
+        cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+
+
 def ensure_db():
     conn = get_conn()
     cur = conn.cursor()
@@ -38,19 +46,20 @@ def ensure_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT,
             workout_type TEXT,
-            exercise TEXT,
-            target_reps TEXT,
-            r1 TEXT,
-            r2 TEXT,
-            r3 TEXT,
-            r4 TEXT,
-            w1 TEXT,
-            w2 TEXT,
-            w3 TEXT,
-            w4 TEXT,
-            comment TEXT
+            exercise TEXT
         )
     """)
+
+    ensure_column(cur, "workouts", "target_reps", "TEXT")
+    ensure_column(cur, "workouts", "r1", "TEXT")
+    ensure_column(cur, "workouts", "r2", "TEXT")
+    ensure_column(cur, "workouts", "r3", "TEXT")
+    ensure_column(cur, "workouts", "r4", "TEXT")
+    ensure_column(cur, "workouts", "w1", "TEXT")
+    ensure_column(cur, "workouts", "w2", "TEXT")
+    ensure_column(cur, "workouts", "w3", "TEXT")
+    ensure_column(cur, "workouts", "w4", "TEXT")
+    ensure_column(cur, "workouts", "comment", "TEXT")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS body_metrics (
@@ -120,8 +129,8 @@ def save_workout(data: List[WorkoutRow]):
             reps_src = item.actual_reps or []
             weights_src = item.weights or []
 
-            reps = reps_src[:4] + [""] * (4 - len(reps_src[:4]))
-            weights = weights_src[:4] + [""] * (4 - len(weights_src[:4]))
+            reps = (reps_src + ["", "", "", ""])[:4]
+            weights = (weights_src + ["", "", "", ""])[:4]
 
             cur.execute("""
                 INSERT INTO workouts (

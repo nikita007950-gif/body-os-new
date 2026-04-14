@@ -63,7 +63,12 @@ export default function DashboardPage() {
       });
 
     fetch(`${API_URL}/body-metrics`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load body metrics");
+        }
+        return res.json();
+      })
       .then(setBodyMetrics)
       .catch(() => setBodyMetrics([]));
   }, []);
@@ -71,7 +76,10 @@ export default function DashboardPage() {
   const nextWorkout = useMemo(() => {
     const order = ["Push", "Pull", "Legs"];
     if (!summary?.last_workout_type) return "Push";
+
     const idx = order.indexOf(summary.last_workout_type);
+    if (idx === -1) return "Push";
+
     return order[(idx + 1) % order.length];
   }, [summary]);
 
@@ -106,12 +114,12 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Вес"
-          value={lastWeight ? `${lastWeight} кг` : "—"}
+          value={lastWeight !== null ? `${lastWeight} кг` : "—"}
           icon={Flame}
         />
         <MetricCard
           label="Жир"
-          value={lastBodyFat ? `${lastBodyFat}%` : "—"}
+          value={lastBodyFat !== null ? `${lastBodyFat}%` : "—"}
           icon={Utensils}
         />
       </div>
@@ -149,7 +157,7 @@ export default function DashboardPage() {
 
 function Header({ router }: { router: any }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div>
         <div className="text-sm text-slate-400">Дашборд</div>
         <div className="text-base text-slate-200">
@@ -160,13 +168,13 @@ function Header({ router }: { router: any }) {
       <div className="flex gap-2">
         <button
           onClick={() => router.push("/body")}
-          className="px-4 py-2 border border-white/10 rounded-xl"
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
         >
           Добавить вес
         </button>
         <button
           onClick={() => router.push("/workouts")}
-          className="px-4 py-2 bg-cyan-400 rounded-xl text-black"
+          className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
         >
           Записать тренировку
         </button>
@@ -179,53 +187,123 @@ function MetricCard({
   label,
   value,
   icon: Icon,
-}: any) {
+}: {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
   return (
-    <div className="p-4 rounded-xl border border-white/10 bg-white/5">
-      <div className="flex justify-between">
-        <span className="text-slate-400 text-sm">{label}</span>
-        <Icon className="w-4 h-4 text-cyan-300" />
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-black/10">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-sm text-slate-400">{label}</span>
+        <Icon className="h-4 w-4 text-cyan-300" />
       </div>
       <div className="text-xl font-semibold">{value}</div>
     </div>
   );
 }
 
-function Panel({ title, children }: any) {
+function Panel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="p-5 border border-white/10 rounded-2xl">
-      <h2 className="mb-4">{title}</h2>
+    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+      <h2 className="mb-4 text-lg font-semibold tracking-tight">{title}</h2>
       {children}
-    </div>
+    </section>
   );
 }
 
-function ChartCard({ title, children }: any) {
+function ChartCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="p-4 border border-white/10 rounded-xl">
-      <div className="mb-2 text-sm text-slate-400">{title}</div>
-      <div className="h-40">{children}</div>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="mb-3 text-sm text-slate-300">{title}</div>
+      <div className="h-44">{children}</div>
     </div>
   );
 }
 
-function MetricChart({ data, dataKey, unit }: any) {
-  const valid = data.filter((x: any) => x[dataKey] !== null);
+function MetricChart({
+  data,
+  dataKey,
+  unit,
+}: {
+  data: Array<{
+    date: string;
+    weight: number | null;
+    body_fat: number | null;
+  }>;
+  dataKey: "weight" | "body_fat";
+  unit: string;
+}) {
+  const valid = data.filter((x) => x[dataKey] !== null);
 
   if (!valid.length) {
-    return <div className="text-slate-500 text-sm">Нет данных</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-slate-500">
+        Нет данных
+      </div>
+    );
   }
+
+  const values = valid
+    .map((x) => Number(x[dataKey]))
+    .filter((x) => !Number.isNaN(x));
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  const range = maxValue - minValue;
+  const padding = range === 0 ? Math.max(minValue * 0.02, 1) : range * 0.2;
+
+  const yMin = Math.floor((minValue - padding) * 10) / 10;
+  const yMax = Math.ceil((maxValue + padding) * 10) / 10;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={valid}>
-        <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Tooltip
-          formatter={(value: any) => [String(value) + " " + unit, "Значение"]}
+      <LineChart data={valid} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+        <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 12, fill: "#94a3b8" }}
+          axisLine={false}
+          tickLine={false}
         />
-        <Line dataKey={dataKey} stroke="#22d3ee" />
+        <YAxis
+          domain={[yMin, yMax]}
+          tick={{ fontSize: 12, fill: "#94a3b8" }}
+          axisLine={false}
+          tickLine={false}
+          width={40}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "#0f172a",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "12px",
+            color: "#e2e8f0",
+          }}
+          formatter={(value) => [String(value) + " " + unit, "Значение"]}
+          labelFormatter={(label) => `Дата: ${label}`}
+        />
+        <Line
+          type="monotone"
+          dataKey={dataKey}
+          stroke="#22d3ee"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+          activeDot={{ r: 5 }}
+        />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -233,5 +311,13 @@ function MetricChart({ data, dataKey, unit }: any) {
 
 function formatShortDate(value: string) {
   const d = new Date(value);
-  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+
+  if (Number.isNaN(d.getTime())) {
+    return value;
+  }
+
+  return d.toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+  });
 }

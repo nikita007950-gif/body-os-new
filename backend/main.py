@@ -481,3 +481,38 @@ def delete_all_workouts():
     finally:
         if conn:
             conn.close()
+
+@app.delete("/workouts/by-group")
+def delete_workout_group(date: str, workout_type: str):
+    ensure_db()
+
+    conn = None
+
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute(
+            "DELETE FROM workouts WHERE date = ? AND workout_type = ?",
+            (date, workout_type),
+        )
+        deleted = cur.rowcount
+
+        conn.commit()
+
+        return {
+            "status": "ok",
+            "deleted": deleted,
+            "date": date,
+            "workout_type": workout_type,
+        }
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.exception("Failed to delete workout group: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to delete workout group")
+
+    finally:
+        if conn:
+            conn.close()

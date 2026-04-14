@@ -37,24 +37,27 @@ export default function HistoryPage() {
   const [data, setData] = useState<HistoryRow[]>([]);
   const [filter, setFilter] = useState<"All" | "Push" | "Pull" | "Legs">("All");
   const [error, setError] = useState("");
+  const [deletingKey, setDeletingKey] = useState("");
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(`${API_URL}/workouts`, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const rows: HistoryRow[] = await res.json();
+      setData(Array.isArray(rows) ? rows : []);
+      setError("");
+    } catch (err) {
+      console.error("History fetch error:", err);
+      setData([]);
+      setError("Не удалось загрузить историю тренировок");
+    }
+  }
 
   useEffect(() => {
-    fetch(`${API_URL}/workouts`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((rows: HistoryRow[]) => {
-        setData(Array.isArray(rows) ? rows : []);
-        setError("");
-      })
-      .catch((err) => {
-        console.error("History fetch error:", err);
-        setData([]);
-        setError("Не удалось загрузить историю тренировок");
-      });
+    loadHistory();
   }, []);
 
   const filteredData = useMemo(() => {
@@ -82,6 +85,42 @@ export default function HistoryPage() {
 
     return Array.from(groups.values());
   }, [filteredData]);
+
+  async function handleDeleteGroup(group: WorkoutGroup) {
+    const ok = window.confirm(
+      `Удалить тренировку ${group.type} от ${group.date}?`
+    );
+
+    if (!ok) return;
+
+    try {
+      setDeletingKey(group.key);
+
+      const params = new URLSearchParams({
+        date: group.date,
+        workout_type: group.type,
+      });
+
+      const res = await fetch(`${API_URL}/workouts/by-group?${params.toString()}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      setData((prev) =>
+        prev.filter(
+          (row) => !(safeText(row.date) === group.date && safeText(row.type) === group.type)
+        )
+      );
+    } catch (err) {
+      console.error("Delete workout error:", err);
+      alert("Не удалось удалить тренировку");
+    } finally {
+      setDeletingKey("");
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -125,7 +164,7 @@ export default function HistoryPage() {
             key={group.key}
             className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
           >
-            <div className="flex flex-col gap-2 border-b border-white/10 bg-white/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-white/10 bg-white/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-lg font-semibold text-white">
                   {safeText(group.type)}
@@ -133,8 +172,18 @@ export default function HistoryPage() {
                 <div className="text-sm text-slate-400">{safeText(group.date)}</div>
               </div>
 
-              <div className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
-                {group.rows.length} упражнений
+              <div className="flex items-center gap-3">
+                <div className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
+                  {group.rows.length} упражнений
+                </div>
+
+                <button
+                  onClick={() => handleDeleteGroup(group)}
+                  disabled={deletingKey === group.key}
+                  className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm font-medium text-red-200 transition hover:bg-red-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingKey === group.key ? "Удаляю..." : "Удалить тренировку"}
+                </button>
               </div>
             </div>
 

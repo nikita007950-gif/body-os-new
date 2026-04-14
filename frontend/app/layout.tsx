@@ -1,163 +1,152 @@
 "use client";
 
-import "./globals.css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
+  Activity,
   Dumbbell,
+  Flag,
   History,
-  LayoutDashboard,
   Menu,
-  Target,
   Utensils,
   X,
 } from "lucide-react";
+import { useState } from "react";
 
-export default function RootLayout({
+const navItems = [
+  { href: "/dashboard", label: "Дашборд", icon: Activity },
+  { href: "/workouts", label: "Тренировки", icon: Dumbbell },
+  { href: "/nutrition", label: "Питание", icon: Utensils },
+  { href: "/history", label: "История", icon: History },
+  { href: "/goals", label: "Цели", icon: Flag },
+];
+
+export default function RootLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <html lang="ru">
-      <body className="bg-[#07111f] text-white">
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.06),_transparent_25%),linear-gradient(180deg,#07111f_0%,#091423_100%)]">
-          <div className="flex min-h-screen">
-            {isOpen && (
-              <button
-                aria-label="Закрыть меню"
-                className="fixed inset-0 z-40 bg-black/60 lg:hidden"
-                onClick={() => setIsOpen(false)}
-              />
-            )}
-
-            <aside
-              className={`fixed inset-y-0 left-0 z-50 w-[280px] border-r border-white/10 bg-[#08101d] p-5 transition-transform duration-300 lg:static lg:translate-x-0 ${
-                isOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              <div className="mb-6 flex items-start justify-between">
-                <div>
-                  <div className="text-2xl font-semibold tracking-tight text-white">
-                    Body OS
-                  </div>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Операционная система тела
-                  </p>
-                </div>
-
-                <button
-                  aria-label="Закрыть меню"
-                  className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 lg:hidden"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-5 w-5" />
-                </button>
+      <body className="bg-[#f8f7fb] text-gray-900">
+        <div className="min-h-screen md:flex">
+          <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-white md:flex md:flex-col">
+            <div className="border-b border-gray-100 px-6 py-6">
+              <div className="text-4xl font-bold tracking-tight text-gray-900">
+                Body OS
               </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Операционная система тела
+              </p>
+            </div>
 
-              <nav className="space-y-2">
-                <NavItem
-                  href="/dashboard"
-                  icon={LayoutDashboard}
-                  label="Дашборд"
-                  active={pathname === "/dashboard"}
-                />
-                <NavItem
-                  href="/workouts"
-                  icon={Dumbbell}
-                  label="Тренировки"
-                  active={pathname === "/workouts"}
-                />
-                <NavItem
-                  href="/nutrition"
-                  icon={Utensils}
-                  label="Питание"
-                  active={pathname === "/nutrition"}
-                />
-                <NavItem
-                  href="/history"
-                  icon={History}
-                  label="История"
-                  active={pathname === "/history"}
-                />
-                <NavItem
-                  href="/goals"
-                  icon={Target}
-                  label="Цели"
-                  active={pathname === "/goals"}
-                />
-              </nav>
+            <nav className="flex-1 space-y-2 px-4 py-6">
+              {navItems.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                      active
+                        ? "bg-pink-500 text-white shadow-sm"
+                        : "text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-              <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-                <div className="text-sm font-medium text-cyan-200">
+            <div className="p-4">
+              <div className="rounded-3xl border border-pink-100 bg-pink-50 p-4">
+                <div className="text-sm font-semibold text-pink-700">
                   Фокус недели
                 </div>
-                <div className="mt-2 text-sm leading-6 text-slate-300">
+                <div className="mt-2 text-sm leading-6 text-gray-600">
                   Стабильно закрывать PPL-цикл и фиксировать факт по повторам и
                   весам.
                 </div>
               </div>
-            </aside>
+            </div>
+          </aside>
 
-            <main className="min-w-0 flex-1">
-              <header className="sticky top-0 z-30 border-b border-white/10 bg-[#07111f]/80 backdrop-blur lg:hidden">
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <div className="text-lg font-semibold">Body OS</div>
-                    <div className="text-xs text-slate-400">
-                      Тренировки и прогресс
+          <div className="flex-1">
+            <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-4 py-4 backdrop-blur md:hidden">
+              <div>
+                <div className="text-2xl font-bold tracking-tight text-gray-900">
+                  Body OS
+                </div>
+                <div className="text-sm text-gray-500">Тренировки и прогресс</div>
+              </div>
+
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="rounded-2xl border border-gray-200 bg-white p-3 text-gray-700 shadow-sm"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+            </header>
+
+            {mobileMenuOpen && (
+              <div className="fixed inset-0 z-40 md:hidden">
+                <div
+                  className="absolute inset-0 bg-black/30"
+                  onClick={() => setMobileMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-0 h-full w-72 border-l border-gray-200 bg-white p-5 shadow-xl">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        Body OS
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Навигация
+                      </div>
                     </div>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-2xl border border-gray-200 p-2 text-gray-700"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
 
-                  <button
-                    aria-label="Открыть меню"
-                    className="rounded-xl border border-white/10 bg-white/5 p-2 text-slate-200"
-                    onClick={() => setIsOpen(true)}
-                  >
-                    <Menu className="h-5 w-5" />
-                  </button>
+                  <nav className="space-y-2">
+                    {navItems.map(({ href, label, icon: Icon }) => {
+                      const active = pathname === href;
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                            active
+                              ? "bg-pink-500 text-white"
+                              : "text-gray-700 hover:bg-pink-50 hover:text-pink-600"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{label}</span>
+                        </Link>
+                      );
+                    })}
+                  </nav>
                 </div>
-              </header>
+              </div>
+            )}
 
-              <div className="p-4 sm:p-5 lg:p-6">{children}</div>
+            <main className="mx-auto max-w-[1400px] px-4 py-4 md:px-6 md:py-6">
+              {children}
             </main>
           </div>
         </div>
       </body>
     </html>
-  );
-}
-
-function NavItem({
-  href,
-  icon: Icon,
-  label,
-  active,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition ${
-        active
-          ? "bg-cyan-400 text-slate-950"
-          : "text-slate-300 hover:bg-white/5 hover:text-white"
-      }`}
-    >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className="text-sm font-medium">{label}</span>
-    </Link>
   );
 }

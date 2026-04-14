@@ -378,7 +378,7 @@ function MetricLineChart({
             borderRadius: "16px",
             color: "#e2e8f0",
           }}
-          formatter={(value: number) => [`${value} ${unit}`, "Значение"]}
+          formatter={(value) => [`${value} ${unit}`, "Значение"]}
           labelFormatter={(label) => `Дата: ${label}`}
         />
         <Line

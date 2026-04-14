@@ -10,9 +10,9 @@ type HistoryRow = {
   type: string;
   exercise: string;
   target_reps: string;
-  actual_reps: string[];
-  weights: string[];
-  comment: string;
+  actual_reps: Array<string | number | null>;
+  weights: Array<string | number | null>;
+  comment: string | null;
 };
 
 type WorkoutGroup = {
@@ -22,20 +22,23 @@ type WorkoutGroup = {
   rows: HistoryRow[];
 };
 
-function cleanJoin(values: any[]) {
-  return values
+function cleanJoin(values: Array<string | number | null | undefined>) {
+  return (values || [])
     .map((x) => String(x ?? "").trim())
     .filter((x) => x !== "")
     .join(" / ");
 }
 
+function safeText(value: string | number | null | undefined) {
+  return String(value ?? "").trim();
+}
+
 export default function HistoryPage() {
   const [data, setData] = useState<HistoryRow[]>([]);
   const [filter, setFilter] = useState<"All" | "Push" | "Pull" | "Legs">("All");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    console.log("API_URL =", API_URL);
-
     fetch(`${API_URL}/workouts`)
       .then((res) => {
         if (!res.ok) {
@@ -43,10 +46,14 @@ export default function HistoryPage() {
         }
         return res.json();
       })
-      .then((rows: HistoryRow[]) => setData(rows))
+      .then((rows: HistoryRow[]) => {
+        setData(Array.isArray(rows) ? rows : []);
+        setError("");
+      })
       .catch((err) => {
         console.error("History fetch error:", err);
         setData([]);
+        setError("Не удалось загрузить историю тренировок");
       });
   }, []);
 
@@ -59,13 +66,13 @@ export default function HistoryPage() {
     const groups = new Map<string, WorkoutGroup>();
 
     filteredData.forEach((row) => {
-      const key = `${row.date}__${row.type}`;
+      const key = `${safeText(row.date)}__${safeText(row.type)}`;
 
       if (!groups.has(key)) {
         groups.set(key, {
           key,
-          date: row.date,
-          type: row.type,
+          date: safeText(row.date),
+          type: safeText(row.type),
           rows: [],
         });
       }
@@ -106,6 +113,12 @@ export default function HistoryPage() {
         </div>
       </section>
 
+      {error ? (
+        <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
       <div className="space-y-5">
         {groupedData.map((group) => (
           <section
@@ -115,9 +128,9 @@ export default function HistoryPage() {
             <div className="flex flex-col gap-2 border-b border-white/10 bg-white/[0.04] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-lg font-semibold text-white">
-                  {group.type}
+                  {safeText(group.type)}
                 </div>
-                <div className="text-sm text-slate-400">{group.date}</div>
+                <div className="text-sm text-slate-400">{safeText(group.date)}</div>
               </div>
 
               <div className="rounded-full border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
@@ -142,11 +155,11 @@ export default function HistoryPage() {
                       key={row.id}
                       className="border-t border-white/10 text-slate-200"
                     >
-                      <td className="px-4 py-3">{row.exercise}</td>
-                      <td className="px-4 py-3">{row.target_reps}</td>
+                      <td className="px-4 py-3">{safeText(row.exercise)}</td>
+                      <td className="px-4 py-3">{safeText(row.target_reps)}</td>
                       <td className="px-4 py-3">{cleanJoin(row.actual_reps)}</td>
                       <td className="px-4 py-3">{cleanJoin(row.weights)}</td>
-                      <td className="px-4 py-3">{row.comment}</td>
+                      <td className="px-4 py-3">{safeText(row.comment)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -155,7 +168,7 @@ export default function HistoryPage() {
           </section>
         ))}
 
-        {groupedData.length === 0 && (
+        {!error && groupedData.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-10 text-center text-slate-400">
             Записей по выбранному фильтру пока нет.
           </div>

@@ -271,7 +271,7 @@ function MetricChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={valid} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+      <LineChart data={valid} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
         <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
         <XAxis
           dataKey="date"
@@ -284,7 +284,7 @@ function MetricChart({
           tick={{ fontSize: 12, fill: "#94a3b8" }}
           axisLine={false}
           tickLine={false}
-          width={40}
+          width={55}
         />
         <Tooltip
           contentStyle={{
